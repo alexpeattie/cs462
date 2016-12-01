@@ -28,4 +28,5 @@ PLATFORMS
 
 DEPENDENCIES
   sinatra
+  sinatra-contrib
   sinatra-reloader
