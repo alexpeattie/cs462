@@ -1,14 +1,18 @@
 require 'sinatra/base'
-require 'sinatra/reloader'
 require 'sinatra/multi_route'
+require 'sinatra/reloader' unless ENV['HEROKU']
 
 class MyApp < Sinatra::Base
-  register Sinatra::Reloader
+  register Sinatra::Reloader unless ENV['HEROKU']
   register Sinatra::MultiRoute
 
   before do
     request.body.rewind
     @request_payload = request.body.read
+  end
+
+  get '/'
+    erb :index
   end
 
   route :get, :post, '/request_details' do
