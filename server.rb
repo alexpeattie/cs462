@@ -11,7 +11,7 @@ class MyApp < Sinatra::Base
     @request_payload = request.body.read
   end
 
-  get '/'
+  get '/' do
     erb :index
   end
 
