@@ -1,28 +1,18 @@
+<ul class="list ph5 mt0 center">
+  <% @users.each do |user| %>
+    <li class="flex items-center lh-copy pa3 ph0-l bb b--black-10">
+      <img class="w2 h2 w3-ns h3-ns br-100" src="<%= user.profile_photo %>" />
+      <div class="pl3 flex-auto">
+        <span class="f6 db black-70"><%= user.name %></span>
+        <span class="f6 db black-70"><%= user.home_city %></span>
+      </div>
+      <div>
+        <a href="/profile/<%= user.id %>" class="f6 link blue hover-dark-gray">View profile</a>
+      </div>
+    </li>
+  <% end %>
+</ul>
 
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="x-ua-compatible" content="ie=edge">
-    <title>EC2 Hello World!</title>
-    <link rel="stylesheet" href="https://cdn.rawgit.com/sindresorhus/github-markdown-css/gh-pages/github-markdown.css">
-    <meta name="description" content="">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <style>
-      body {
-        max-width: 800px;
-        margin: 30px auto;
-      }
-    </style>
-  </head>
-
-  <body class='markdown-body'>
-    <h1>CS462 - Lab 2</h1>
-
-    <ul>
-      <li><a href='/redirect'>Redirect script</a></li>
-      <li><a href='/request_details'>Request details script</a></li>
-      <li><a href='/versioned'>Versioning script</a></li>
-    </ul>
-  </body>
-</html>
+<% if @users.none? %>
+  <p class='tc pt3'>No users yet</p>
+<% end %>

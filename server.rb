@@ -1,77 +1,80 @@
 require 'sinatra/base'
-require 'sinatra/multi_route'
-require 'sinatra/reloader' unless ENV['HEROKU']
+require 'httparty'
+require 'mongoid'
+require 'rack/ssl'
+Mongoid.load! 'mongoid.yml'
 
-class MyApp < Sinatra::Base
-  register Sinatra::Reloader unless ENV['HEROKU']
-  register Sinatra::MultiRoute
+class User
+  include Mongoid::Document
 
+  field :id, type: String
+  field :access_token, type: String
+  field :profile_photo, type: String
+  field :name, type: String
+  field :home_city, type: String
+end
+
+class FoursquareApp < Sinatra::Base
+  use Rack::SSL if ENV['HEROKU']
+
+  # We're storing our client secret and other config in environment variables
+  AUTH_URL = "https://foursquare.com/oauth2/authenticate?client_id=#{ ENV['FS_CLIENT_ID' ]}&response_type=code&redirect_uri=#{ ENV['FS_REDIR_URI' ]}".freeze
+  ACCESS_TOKEN_URL = "https://foursquare.com/oauth2/access_token?client_id=#{ ENV['FS_CLIENT_ID' ]}&client_secret=#{ ENV['FS_CLIENT_SECRET' ]}&grant_type=authorization_code&redirect_uri=#{ ENV['FS_REDIR_URI' ]}".freeze
+  API_VERSION = '20161201'.freeze
+
+  enable :sessions
   before do
-    request.body.rewind
-    @request_payload = request.body.read
+    @current_user = User.find_by(id: session[:id]) if session[:id]
   end
 
   get '/' do
+    @users = User.all
     erb :index
   end
 
-  route :get, :post, '/request_details' do
-    content_type 'text/plain'
-
-    [
-      "---- HTTP HEADERS ----",
-      request_headers, "",
-      "---- QUERY STRING PARAMTERS ----",
-      query_params, "",
-      "---- REQUEST BODY ----",
-      (@request_payload.empty? ? "(None)" : @request_payload), ""
-    ].flatten.join("\n")
+  get '/login' do
+    redirect AUTH_URL
   end
 
-  get '/redirect' do
-    if matched_redirection
-      redirect to(matched_redirection), 301
-    else
-      erb :redirect
+  get '/accepted' do
+    token_request = HTTParty.get(ACCESS_TOKEN_URL + "&code=#{ params[:code ]}")
+    user_details = foursquare_api_request('users/self', token_request['access_token'], %w(response user))
+
+    user = User.find_or_create_by(id: user_details['id']) do |user|
+      # This block only runs for a new user
+      user.name = [user_details['firstName'], user_details['lastName']].join(' ')
+      user.profile_photo = [user_details['photo']['prefix'], 256, user_details['photo']['suffix']].join
+      user.home_city = user_details['homeCity']
     end
+    user.update(access_token: token_request['access_token'])
+
+    session[:id] = user.id
+
+    redirect to("/profile/#{ user.id }")
   end
 
-  get '/versioned' do
-    content_type 'application/json'
+  get '/logout' do
+    session[:id] = nil
+    redirect to('/')
+  end
 
-    case request.env["HTTP_ACCEPT"].downcase
-    when 'application/vnd.byu.cs462.v1+json'
-      '{"version": "v1" }'
-    when 'application/vnd.byu.cs462.v2+json'
-      '{"version": "v2" }'
-    else
-      status 406
-      '{"error": "Unknown version. Accept header must be either application/vnd.byu.cs462.v1+json or application/vnd.byu.cs462.v1+json" }'
-    end
+  get '/profile/:id' do
+    @user = User.find_by!(id: params[:id])
+
+    @checkins = foursquare_api_request("users/#{ @user.id }/checkins", @user.access_token, %w(response checkins items))
+
+    @is_mine = @current_user && @current_user.id == @user.id
+    @checkins = @checkins.first(1) unless @is_mine
+
+    erb :profile
   end
 
   private
 
-  def request_headers
-    raw_headers = request.env.select { |name, value| name.start_with?("HTTP") }
-    raw_headers.sort_by(&:first).map do |name, value|
-      [name.sub('HTTP_', '').split("_").map(&:downcase).map(&:capitalize).join("-"), value].join(": ")
-    end
-  end
+  def foursquare_api_request(endpoint, token, target_fields)
+    base_url = "https://api.foursquare.com/v2/"
 
-  def query_params
-    qp = request.env['rack.request.query_hash']
-    qp.any? ? qp.map { |k, v| [k,v].join(": ") } : "(None)"
-  end
-
-  def matched_redirection
-    chosen_network = %w(google facebook github twitter).find { |network| params.key?(network) }
-
-    { 
-      "google" => "https://google.com",
-      "facebook" => "https://facebook.com",
-      "github" => "https://github.com",
-      "twitter" => "https://twitter.com"
-    }[chosen_network]
+    response = HTTParty.get(base_url + endpoint, query: { oauth_token: token, v: API_VERSION })
+    response.to_h.dig(*target_fields)
   end
 end

@@ -1,2 +1,2 @@
 require './server'
-run MyApp
+run FoursquareApp

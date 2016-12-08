@@ -1,0 +1,13 @@
+development:
+  clients:
+    default:
+      database: foursquare_dev
+      hosts:
+        - localhost:27017
+production:
+  clients:
+    default:
+      uri: <%= ENV['MONGODB_URI'] %>
+
+      options:
+        connect_timeout: 15

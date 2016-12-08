@@ -1,8 +1,7 @@
 source 'https://rubygems.org'
+ruby '2.3.1'
 
 gem 'sinatra'
-gem 'sinatra-contrib'
-
-group :test, :development do
-  gem 'sinatra-reloader'
-end
+gem 'httparty'
+gem 'mongoid'
+gem 'rack-ssl'

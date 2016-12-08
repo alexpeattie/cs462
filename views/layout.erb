@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <title>Multi-tenanted Foursquare app</title>
+    <link rel="stylesheet" href="https://unpkg.com/tachyons@4.5.5/css/tachyons.min.css"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+      body > section { min-width: 600px; }
+      .link:focus { outline: 0; }
+    </style>
+  </head>
+
+  <body class='bg-light-gray'>
+    <section class="mw5 mw7-ns center bg-white pa3 pb5 mt5">
+      <nav class="dt w-100 border-box pa3 ph5-ns">
+        <span class='gray f6 pv2'>
+          <%= @current_user ? "You're logged in as #{ @current_user.name }" : "You're not currently logged in" %>
+        </span>
+
+        <div class="dtc v-mid w-50 tr">
+          <% if @current_user %>
+            <a class="f6 link dim br-pill ph3 pv2 mb2 dib white bg-purple" href="/logout">Logout</a>
+          <% else %>
+            <a class="f6 link dim br-pill ph3 pv2 mb2 dib white bg-purple" href="/login">Connect with Foursquare</a>
+          <% end %>
+        </div>
+      </nav>
+
+      <%= yield %>
+    </section>
+  </body>
+</html>
