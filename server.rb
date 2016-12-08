@@ -15,7 +15,7 @@ class User
 end
 
 class FoursquareApp < Sinatra::Base
-  use Rack::SSL if ENV['HEROKU']
+  use Rack::SSL unless ENV['DEVELOPMENT']
 
   # We're storing our client secret and other config in environment variables
   AUTH_URL = "https://foursquare.com/oauth2/authenticate?client_id=#{ ENV['FS_CLIENT_ID' ]}&response_type=code&redirect_uri=#{ ENV['FS_REDIR_URI' ]}".freeze
